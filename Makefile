@@ -18,6 +18,8 @@ test_case      ?= core_test
 questa_version ?= ${QUESTASIM_VERSION}
 # verilator version
 verilator      ?= verilator
+# moore version
+moore          ?= moore
 # traget option
 target-options ?=
 # additional definess
@@ -418,6 +420,20 @@ $(addsuffix -verilator,$(riscv-benchmarks)): verilate
 	$(ver-library)/Variane_testharness $(riscv-benchmarks-dir)/$(subst -verilator,,$@)
 
 run-asm-tests-verilator: $(addsuffix -verilator, $(riscv-asm-tests)) $(addsuffix -verilator, $(riscv-amo-tests)) $(addsuffix -verilator, $(riscv-fp-tests)) $(addsuffix -verilator, $(riscv-fp-tests))
+
+# Moore magic
+moore_command := $(moore)                                                    \
+                 $(filter-out %.vhd, $(ariane_pkg))                          \
+                 $(filter-out src/fpu_wrap.sv, $(filter-out %.vhd, $(src)))  \
+                 src/util/sram.sv                                            \
+                 -I src/axi_node                                             \
+                 $(foreach def, ${defines}, -D $(def))                       \
+                 $(foreach dir, ${incdir}, -I $(dir))                        \
+                 -e ariane_testharness                                       \
+                 > ariane.llhd
+
+moore:
+	$(moore_command)
 
 # split into smaller travis jobs (otherwise they will time out)
 riscv-asm-rv64ui-v := $(filter rv64ui-v-%, $(riscv-asm-tests))
